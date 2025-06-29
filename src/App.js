@@ -34,21 +34,41 @@ export default function App() {
   const [friends, setFriends] = useState(initialFriends);
   // When user clicks to Select a friend, we store that object in this state:
   const [selectedFriend, setSelectedFriend] = useState(null);
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [deleteFriend, setDeleteFriend] = useState(false);
+  const [showDeleteFriend, setShowDeleteFriend] = useState(true);
 
   function handleSelection(friend) {
-    setSelectedFriend((cur) => (cur?.id === friend.id ? null : friend));
-    setShowAddFriend(false);
+    if (!showDeleteFriend) {
+      const selectedFriendId = friend.id;
+      setFriends((friends) =>
+        friends.filter((friend) => friend.id !== selectedFriendId)
+      );
+      setShowDeleteFriend(true);
+    } else {
+      setSelectedFriend((cur) => (cur?.id === friend.id ? null : friend));
+      setShowAddFriend(false);
+    }
   }
-  const [showAddFriend, setShowAddFriend] = useState(false);
 
   function handleShowAddFriend() {
     setShowAddFriend((show) => !show);
   }
 
+  function handleShowDeleteFriend(friend) {
+    setShowDeleteFriend((show) => !show);
+  }
+
   function handleAddFriend(friend) {
     setFriends((friends) => [...friends, friend]);
     setShowAddFriend(false);
+    setShowDeleteFriend(true);
   }
+
+  // function handleDeleteFriend(friend) {
+  //   setFriends.filter((friends) => friend.id === id);
+  //   setShowDeleteFriend(false);
+  // }
 
   function handleSplitBill(value) {
     setFriends((friends) =>
@@ -68,7 +88,12 @@ export default function App() {
           friends={friends}
           onSelection={handleSelection}
           selectedFriend={selectedFriend}
+          onShowDeleteFriend={showDeleteFriend}
         />
+
+        {showDeleteFriend && (
+          <Button onClick={handleShowDeleteFriend}>Delete Friend</Button>
+        )}
 
         {showAddFriend && <FormAddFriend onAddFriend={handleAddFriend} />}
 
@@ -86,7 +111,12 @@ export default function App() {
   );
 }
 
-function FriendsList({ friends, onSelection, selectedFriend }) {
+function FriendsList({
+  friends,
+  onSelection,
+  selectedFriend,
+  onShowDeleteFriend,
+}) {
   return (
     <ul className="sidebar">
       {friends.map((friend) => (
@@ -95,13 +125,14 @@ function FriendsList({ friends, onSelection, selectedFriend }) {
           key={friend.id}
           selectedFriend={selectedFriend}
           onSelection={onSelection}
+          onShowDeleteFriend={onShowDeleteFriend}
         />
       ))}
     </ul>
   );
 }
 
-function Friend({ friend, onSelection, selectedFriend }) {
+function Friend({ friend, onSelection, selectedFriend, onShowDeleteFriend }) {
   const isSelected = selectedFriend?.id === friend.id;
 
   return (
@@ -120,7 +151,7 @@ function Friend({ friend, onSelection, selectedFriend }) {
       )}
       {friend.balance === 0 && <p>You and {friend.name} are even </p>}
       <Button onClick={() => onSelection(friend)}>
-        {isSelected ? "Close" : "Select"}
+        {!onShowDeleteFriend ? "Delete" : isSelected ? "Close" : "Select"}
       </Button>
     </li>
   );
@@ -162,6 +193,46 @@ function FormAddFriend({ onAddFriend }) {
         onChange={(e) => setImage(e.target.value)}
       />
       <Button className="button">Add Friend</Button>
+    </form>
+  );
+}
+
+function FormDeleteFriend({ onDeleteFriend }) {
+  const [name, setName] = useState("");
+  const [image, setImage] = useState("https://i.pravatar.cc/48");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    if (!name || !image) return;
+    const id = crypto.randomUUID();
+    const newFriend = {
+      id,
+      name,
+      image: `${image}?=${id}`,
+      balance: 0,
+    };
+    onDeleteFriend(newFriend);
+
+    setName("");
+    setImage("https://i.pravatar.cc/48");
+  }
+
+  return (
+    <form className="form-add-friend" onSubmit={handleSubmit}>
+      <label>👫 Friend name</label>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <label>🌄 Image URL</label>
+      <input
+        type="text"
+        value={image}
+        onChange={(e) => setImage(e.target.value)}
+      />
+      <Button className="button">Delete Friend</Button>
     </form>
   );
 }
